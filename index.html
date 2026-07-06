@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="logo.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shekinah Glory Kingdom</title>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <!-- PDF Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, sans-serif; }
+        body { background: #f5f5f5; padding: 16px; }
+        .container { max-width: 480px; margin: 0 auto; }
+        
+        .header { 
+            background: #1A1A2E;
+            color: #FFBF00;
+            padding: 16px 20px; 
+            border-radius: 16px; 
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .header-logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: white;
+            padding: 4px;
+            flex-shrink: 0;
+            margin: 0 12px;
+        }
+        .header-center {
+            text-align: center;
+            flex: 1;
+        }
+        .header-center h1 { 
+            font-size: 18px; 
+            line-height: 1.2;
+            color: #FFBF00;
+        }
+        .header-center p { 
+            font-size: 12px; 
+            opacity: 0.9;
+            color: #FFBF00;
+        }
+        .header-center .leader-name {
+            font-weight: bold;
+            font-size: 14px;
+            display: block;
+            margin-top: 2px;
+            color: #FFBF00;
+        }
+        .admin-badge {
+            background: #e74c3c;
+            color: white;
+            font-size: 10px;
+            padding: 2px 10px;
+            border-radius: 10px;
+            display: inline-block;
+            margin-left: 4px;
+        }
+        
+        .card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .card h3 { color: #1A1A2E; margin-bottom: 12px; }
+        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; margin-bottom: 8px; }
+        
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background: #1A1A2E;
+            color: #FFBF00;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-primary:hover { background: #2A2A4E; }
+        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+        
+        .btn-danger {
+            width: 100%;
+            padding: 14px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-danger:hover { background: #c0392b; }
+        
+        .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .stat { background: #f8f8f8; padding: 12px; border-radius: 8px; text-align: center; }
+        .stat .number { font-size: 24px; font-weight: bold; color: #1A1A2E; }
+        .stat .label { font-size: 12px; color: #666; }
+        .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+        .tab { flex: 1; padding: 12px; text-align: center; background: #ddd; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .tab.active { background: #1A1A2E; color: #FFBF00; }
+        .hidden { display: none; }
+        
+        .report-item { 
+            border-bottom: 1px solid #eee; 
+            padding: 12px 0; 
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .report-item:hover { background: #f8f8f8; border-radius: 8px; padding-left: 8px; }
+        .report-item:last-child { border-bottom: none; }
+        .report-item strong { color: #1A1A2E; }
+        .report-item .date { color: #888; font-size: 12px; }
+        .report-item .submitted { color: #999; font-size: 11px; }
+        .report-actions { display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+        .delete-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 4px 14px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            width: auto;
+        }
+        .delete-btn:hover { background: #c0392b; }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal.show { display: flex; }
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 480px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+        .modal-content h2 { color: #1A1A2E; margin-bottom: 16px; }
+        .modal-close {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            font-size: 28px;
+            cursor: pointer;
+            color: #999;
+            background: none;
+            border: none;
+            width: auto;
+            padding: 0 8px;
+        }
+        .modal-close:hover { color: #333; }
+        .detail-row { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .detail-row .label { color: #666; }
+        .detail-row .value { font-weight: 600; color: #1A1A2E; }
+        .detail-total { 
+            background: #1A1A2E; 
+            color: #FFBF00; 
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .modal-delete-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 16px;
+        }
+        .modal-delete-btn:hover { background: #c0392b; }
+        .offerings-only-admin { display: none; }
+        
+        .assembly-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .assembly-stat {
+            background: #f8f8f8;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .assembly-stat .name {
+            font-size: 12px;
+            font-weight: 600;
+            color: #1A1A2E;
+        }
+        .assembly-stat .count {
+            font-size: 20px;
+            font-weight: bold;
+            color: #FFBF00;
+        }
+        .admin-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        .admin-actions button {
+            flex: 1;
+            min-width: 100px;
+            padding: 10px;
+            font-size: 14px;
+            background: #1A1A2E;
+            color: #FFBF00;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .admin-actions button:hover { background: #2A2A4E; }
+        .admin-actions .danger { background: #e74c3c; color: white; }
+        .admin-actions .danger:hover { background: #c0392b; }
+        .admin-actions .pdf-btn { background: #2ECC71; color: white; }
+        .admin-actions .pdf-btn:hover { background: #27AE60; }
+        
+        .login-error {
+            color: #e74c3c;
+            text-align: center;
+            margin-top: 12px;
+            font-size: 14px;
+            display: none;
+            padding: 10px;
+            background: #fde8e8;
+            border-radius: 8px;
+            border: 1px solid #f5c6c6;
+        }
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        .mt-12 { margin-top: 12px; }
+        
+        .pdf-loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #1A1A2E;
+        }
+        .pdf-loading.show {
+            display: block;
+        }
+        .pdf-loading .spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 4px solid #ddd;
+            border-radius: 50%;
+            border-top-color: #1A1A2E;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .currency-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .currency-row .label {
+            color: #666;
+        }
+        .currency-row .value {
+            font-weight: 600;
+            color: #1A1A2E;
+        }
+        .currency-total {
+            background: #1A1A2E;
+            color: #FFBF00;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .currency-total span {
+            margin: 0 8px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="app">
+
+    <!-- ===== LOGIN SCREEN ===== -->
+    <div id="loginScreen">
+        <div class="header">
+            <div class="logo-container">
+                <img src="logo.png" alt="Logo" class="header-logo">
+                <div class="header-center">
+                    <h1>Shekinah Glory Kingdom</h1>
+                    <p>Service Report Management</p>
+                </div>
+                <img src="logo.png" alt="Logo" class="header-logo">
+            </div>
+        </div>
+        <div class="card">
+            <h3>Sign In</h3>
+            <input type="email" id="loginEmail" placeholder="Email" autocomplete="email">
+            <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
+            <button class="btn-primary" id="loginBtn" onclick="doLogin()">Sign In</button>
+            <div id="loginError" class="login-error"></div>
+            <p style="text-align:center;margin-top:12px;font-size:14px;color:#888;">Contact admin for access</p>
+        </div>
+    </div>
+
+    <!-- ===== MAIN APP ===== -->
+    <div id="appContent" class="hidden">
+
+        <div class="header">
+            <div class="logo-container">
+                <img src="logo.png" alt="Logo" class="header-logo">
+                <div class="header-center">
+                    <h1>Shekinah Glory Kingdom</h1>
+                    <p>Welcome, <span class="leader-name" id="userName">Leader</span></p>
+                </div>
+                <img src="logo.png" alt="Logo" class="header-logo">
+            </div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('dashboard')">📊 Dashboard</div>
+            <div class="tab" onclick="switchTab('submit')">📝 Submit</div>
+            <div class="tab" onclick="switchTab('history')">📋 Reports</div>
+        </div>
+
+        <div id="tabDashboard">
+            <div class="card">
+                <h3>📊 Total Attendance (All Time)</h3>
+                <div class="stats">
+                    <div class="stat"><div class="number" id="totalMen">0</div><div class="label">👨 Men</div></div>
+                    <div class="stat"><div class="number" id="totalWomen">0</div><div class="label">👩 Women</div></div>
+                    <div class="stat"><div class="number" id="totalChildren">0</div><div class="label">🧒 Children</div></div>
+                    <div class="stat"><div class="number" id="totalAttendance">0</div><div class="label">Total</div></div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>🏛️ Assembly Breakdown</h3>
+                <div id="assemblyBreakdown" class="assembly-stats">
+                    <p style="color:#888;text-align:center;grid-column:span 2;">Loading...</p>
+                </div>
+            </div>
+            
+            <div class="card offerings-only-admin" id="offeringsCard">
+                <h3>💰 Offerings (All Time)</h3>
+                <div class="stats">
+                    <div class="stat"><div class="number" id="totalUSD">$0</div><div class="label">USD</div></div>
+                    <div class="stat"><div class="number" id="totalZiG">0</div><div class="label">ZiG</div></div>
+                    <div class="stat"><div class="number" id="totalZAR">R0</div><div class="label">ZAR</div></div>
+                </div>
+            </div>
+            
+            <div class="card offerings-only-admin" id="adminActions">
+                <h3>🔧 Admin Actions</h3>
+                <div class="admin-actions">
+                    <button class="pdf-btn" onclick="downloadPDF()">📄 Download PDF</button>
+                    <button class="danger" onclick="clearAllData()">🗑️ Clear All Data</button>
+                </div>
+                <div id="pdfLoading" class="pdf-loading">
+                    <div class="spinner"></div>
+                    <p style="margin-top:10px;">Generating PDF...</p>
+                </div>
+            </div>
+            
+            <button class="btn-danger mt-12" onclick="doLogout()">Logout</button>
+        </div>
+
+        <div id="tabSubmit" class="hidden">
+            <div class="card">
+                <h3>📝 Submit Report</h3>
+                <input type="date" id="reportDate">
+                <select id="assembly">
+                    <option value="Embassy of Power">Embassy of Power</option>
+                    <option value="Shining Lights">Shining Lights</option>
+                    <option value="House of Prayer">House of Prayer</option>
+                    <option value="Buffalo Range">Buffalo Range</option>
+                    <option value="Upper Room">Upper Room</option>
+                    <option value="Kuwadzana">Kuwadzana</option>
+                    <option value="Bindura">Bindura</option>
+                    <option value="Botswana">Botswana</option>
+                </select>
+                <select id="serviceType">
+                    <option value="Sunday">Sunday</option>
+                    <option value="Monday">Monday</option>
+                    <option value="Wednesday">Wednesday</option>
+                </select>
+                <input type="number" id="men" placeholder="Men">
+                <input type="number" id="women" placeholder="Women">
+                <input type="number" id="children" placeholder="Children">
+                <input type="number" step="0.01" id="usd" placeholder="USD">
+                <input type="number" step="0.01" id="zig" placeholder="ZiG">
+                <input type="number" step="0.01" id="zar" placeholder="ZAR">
+                <textarea id="notes" placeholder="Notes (optional)" rows="3"></textarea>
+                <button class="btn-primary" onclick="doSubmit()">📤 Submit Report</button>
+            </div>
+        </div>
+
+        <div id="tabHistory" class="hidden">
+            <div class="card">
+                <h3>📋 Recent Reports</h3>
+                <div id="reportsList">
+                    <p style="color:#888;text-align:center;">Loading...</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div id="reportModal" class="modal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeModal()">✕</button>
+        <h2 id="modalTitle">Report Details</h2>
+        <div id="modalBody"></div>
+        <button class="modal-delete-btn" id="modalDeleteBtn" onclick="deleteReportFromModal()">🗑️ Delete Report</button>
+    </div>
+</div>
+
+<script>
+    // ============================================================
+    // 🔥 FIREBASE CONFIG
+    // ============================================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyCBDjboU6Mz2iXi1oXINp5LHjWvQGdtObg",
+        authDomain: "shekinahglorychurch-d6f3d.firebaseapp.com",
+        projectId: "shekinahglorychurch-d6f3d",
+        storageBucket: "shekinahglorychurch-d6f3d.firebasestorage.app",
+        messagingSenderId: "1010638237926",
+        appId: "1:1010638237926:web:d579848fe19917d6fd0b27",
+        measurementId: "G-GJ39STSSNL"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let currentUserRole = 'leader';
+    let currentReportId = null;
+    var allReportsData = [];
+
+    console.log("✅ Firebase initialized");
+
+    // ============================================================
+    // 🔐 AUTH STATE
+    // ============================================================
+    auth.onAuthStateChanged(function(user) {
+        if (user) {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('appContent').classList.remove('hidden');
+            
+            const email = user.email || '';
+            
+            // ============================================================
+            // 🔑 SET ADMIN EMAIL HERE - REPLACE WITH YOUR EMAIL!
+            // ============================================================
+            const adminEmails = ['admin@church.org', 'your-email@gmail.com'];
+            const isAdmin = adminEmails.includes(email);
+            currentUserRole = isAdmin ? 'admin' : 'leader';
+            
+            let displayName = user.displayName || email.split('@')[0] || 'Leader';
+            displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+            
+            document.getElementById('userName').innerHTML = isAdmin 
+                ? displayName + ' <span class="admin-badge">Admin</span>'
+                : displayName;
+            
+            document.getElementById('offeringsCard').style.display = isAdmin ? 'block' : 'none';
+            document.getElementById('adminActions').style.display = isAdmin ? 'block' : 'none';
+            
+            loadDashboard();
+        } else {
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('appContent').classList.add('hidden');
+        }
+    });
+
+    // ============================================================
+    // 📝 LOGIN
+    // ============================================================
+    function doLogin() {
+        const email = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value.trim();
+        const errorEl = document.getElementById('loginError');
+        const loginBtn = document.getElementById('loginBtn');
+        
+        errorEl.style.display = 'none';
+        errorEl.textContent = '';
+        
+        if (!email || !password) {
+            errorEl.textContent = '⚠️ Please enter both email and password';
+            errorEl.style.display = 'block';
+            return;
+        }
+        
+        loginBtn.disabled = true;
+        loginBtn.textContent = 'Signing in...';
+        
+        auth.signInWithEmailAndPassword(email, password)
+            .then(function() {
+                console.log("✅ Login successful");
+            })
+            .catch(function(error) {
+                let message = '❌ Login failed: ';
+                switch (error.code) {
+                    case 'auth/user-not-found':
+                        message += 'No account found with this email.';
+                        break;
+                    case 'auth/wrong-password':
+                        message += 'Incorrect password.';
+                        break;
+                    case 'auth/invalid-email':
+                        message += 'Invalid email address.';
+                        break;
+                    case 'auth/too-many-requests':
+                        message += 'Too many attempts. Try again later.';
+                        break;
+                    default:
+                        message += error.message;
+                }
+                errorEl.textContent = message;
+                errorEl.style.display = 'block';
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Sign In';
+            });
+    }
+
+    // Enter key support
+    document.getElementById('loginEmail').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') doLogin();
+    });
+    document.getElementById('loginPassword').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') doLogin();
+    });
+
+    // ============================================================
+    // 🚪 LOGOUT
+    // ============================================================
+    function doLogout() {
+        if (confirm('Are you sure you want to logout?')) {
+            auth.signOut();
+        }
+    }
+
+    // ============================================================
+    // 📝 SUBMIT REPORT
+    // ============================================================
+    function doSubmit() {
+        const user = auth.currentUser;
+        if (!user) { alert('Please login first'); return; }
+
+        const data = {
+            assembly: document.getElementById('assembly').value,
+            serviceType: document.getElementById('serviceType').value,
+            serviceDate: document.getElementById('reportDate').value || new Date().toISOString().split('T')[0],
+            men: parseInt(document.getElementById('men').value) || 0,
+            women: parseInt(document.getElementById('women').value) || 0,
+            children: parseInt(document.getElementById('children').value) || 0,
+            usd: parseFloat(document.getElementById('usd').value) || 0,
+            zig: parseFloat(document.getElementById('zig').value) || 0,
+            zar: parseFloat(document.getElementById('zar').value) || 0,
+            notes: document.getElementById('notes').value,
+            submittedBy: user.displayName || user.email || 'Unknown',
+            submittedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        db.collection('reports').add(data)
+            .then(function() {
+                alert('✅ Report submitted successfully!');
+                ['men','women','children','usd','zig','zar','notes'].forEach(function(id) {
+                    document.getElementById(id).value = '';
+                });
+                loadDashboard();
+            })
+            .catch(function(error) {
+                alert('❌ Error: ' + error.message);
+            });
+    }
+
+    // ============================================================
+    // 📊 DASHBOARD
+    // ============================================================
+    function loadDashboard() {
+        db.collection('reports').get()
+            .then(function(snapshot) {
+                var totals = { men: 0, women: 0, children: 0, attendance: 0, usd: 0, zig: 0, zar: 0 };
+                var assemblyTotals = {};
+                var assemblyDetails = {};
+                var reports = [];
+                
+                snapshot.forEach(function(doc) {
+                    var d = doc.data();
+                    var assembly = d.assembly || 'Unknown';
+                    reports.push(d);
+                    
+                    totals.men += d.men || 0;
+                    totals.women += d.women || 0;
+                    totals.children += d.children || 0;
+                    totals.attendance += (d.men || 0) + (d.women || 0) + (d.children || 0);
+                    totals.usd += d.usd || 0;
+                    totals.zig += d.zig || 0;
+                    totals.zar += d.zar || 0;
+                    
+                    if (!assemblyTotals[assembly]) {
+                        assemblyTotals[assembly] = 0;
+                    }
+                    assemblyTotals[assembly] += (d.men || 0) + (d.women || 0) + (d.children || 0);
+                    
+                    // Store detailed assembly data for PDF
+                    if (!assemblyDetails[assembly]) {
+                        assemblyDetails[assembly] = { usd: 0, zig: 0, zar: 0, attendance: 0 };
+                    }
+                    assemblyDetails[assembly].usd += d.usd || 0;
+                    assemblyDetails[assembly].zig += d.zig || 0;
+                    assemblyDetails[assembly].zar += d.zar || 0;
+                    assemblyDetails[assembly].attendance += (d.men || 0) + (d.women || 0) + (d.children || 0);
+                });
+                
+                document.getElementById('totalMen').textContent = totals.men;
+                document.getElementById('totalWomen').textContent = totals.women;
+                document.getElementById('totalChildren').textContent = totals.children;
+                document.getElementById('totalAttendance').textContent = totals.attendance;
+                document.getElementById('totalUSD').textContent = '$' + totals.usd.toFixed(2);
+                document.getElementById('totalZiG').textContent = totals.zig.toFixed(2);
+                document.getElementById('totalZAR').textContent = 'R' + totals.zar.toFixed(2);
+                
+                var breakdownDiv = document.getElementById('assemblyBreakdown');
+                var assemblyNames = Object.keys(assemblyTotals);
+                
+                if (assemblyNames.length === 0) {
+                    breakdownDiv.innerHTML = '<p style="color:#888;text-align:center;grid-column:span 2;">No reports yet</p>';
+                } else {
+                    var html = '';
+                    assemblyNames.sort(function(a, b) { return assemblyTotals[b] - assemblyTotals[a]; });
+                    assemblyNames.forEach(function(name) {
+                        html += `
+                            <div class="assembly-stat">
+                                <div class="name">${name}</div>
+                                <div class="count">${assemblyTotals[name]}</div>
+                            </div>
+                        `;
+                    });
+                    breakdownDiv.innerHTML = html;
+                }
+                
+                // Store all data for PDF
+                window._assemblyTotals = assemblyTotals;
+                window._totals = totals;
+                window._assemblyDetails = assemblyDetails;
+                window._reports = reports;
+                
+                loadHistory();
+            })
+            .catch(function(err) {
+                console.error('Dashboard error:', err);
+            });
+    }
+
+    // ============================================================
+    // 📋 HISTORY
+    // ============================================================
+    function loadHistory() {
+        db.collection('reports').orderBy('serviceDate', 'desc').limit(50).get()
+            .then(function(snapshot) {
+                var list = document.getElementById('reportsList');
+                if (snapshot.empty) {
+                    list.innerHTML = '<p style="color:#888;text-align:center;">No reports yet</p>';
+                    return;
+                }
+                var html = '';
+                snapshot.forEach(function(doc) {
+                    var d = doc.data();
+                    var total = (d.men || 0) + (d.women || 0) + (d.children || 0);
+                    var id = doc.id;
+                    var isAdmin = currentUserRole === 'admin';
+                    html += `
+                        <div class="report-item" onclick="viewReport('${id}')">
+                            <strong>${d.assembly || 'N/A'}</strong> - ${d.serviceType || 'Sunday'}
+                            <span class="date">${d.serviceDate || ''}</span><br>
+                            Attendance: ${total} | 💰 USD: $${(d.usd || 0).toFixed(2)} | ZiG: ${(d.zig || 0).toFixed(2)} | ZAR: R${(d.zar || 0).toFixed(2)}
+                            <div class="submitted">Submitted by: ${d.submittedBy || 'Unknown'}</div>
+                            ${isAdmin ? `
+                                <div class="report-actions">
+                                    <button class="delete-btn" onclick="event.stopPropagation(); deleteReport('${id}')">🗑️ Delete</button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                });
+                list.innerHTML = html;
+            })
+            .catch(function(err) {
+                document.getElementById('reportsList').innerHTML = '<p style="color:red;">Error loading reports</p>';
+                console.error('History error:', err);
+            });
+    }
+
+    // ============================================================
+    // 🗑️ DELETE REPORT
+    // ============================================================
+    function deleteReport(reportId) {
+        if (!confirm('⚠️ Delete this report? This cannot be undone!')) return;
+        db.collection('reports').doc(reportId).delete()
+            .then(function() { 
+                alert('✅ Report deleted!'); 
+                loadDashboard(); 
+            })
+            .catch(function(err) { alert('❌ Error: ' + err.message); });
+    }
+
+    function deleteReportFromModal() {
+        if (currentReportId) {
+            deleteReport(currentReportId);
+            closeModal();
+        }
+    }
+
+    // ============================================================
+    // 👁️ VIEW REPORT
+    // ============================================================
+    function viewReport(reportId) {
+        currentReportId = reportId;
+        db.collection('reports').doc(reportId).get()
+            .then(function(doc) {
+                if (!doc.exists) { alert('Report not found'); return; }
+                var d = doc.data();
+                var total = (d.men || 0) + (d.women || 0) + (d.children || 0);
+                var isAdmin = currentUserRole === 'admin';
+                
+                document.getElementById('modalTitle').textContent = '📄 ' + (d.assembly || 'N/A') + ' - ' + (d.serviceType || 'Sunday');
+                document.getElementById('modalBody').innerHTML = `
+                    <div class="detail-row"><span class="label">📅 Date</span><span class="value">${d.serviceDate || 'N/A'}</span></div>
+                    <div class="detail-row"><span class="label">🏛️ Assembly</span><span class="value">${d.assembly || 'N/A'}</span></div>
+                    <div class="detail-row"><span class="label">📖 Service</span><span class="value">${d.serviceType || 'N/A'}</span></div>
+                    <div class="detail-row"><span class="label">👨 Men</span><span class="value">${d.men || 0}</span></div>
+                    <div class="detail-row"><span class="label">👩 Women</span><span class="value">${d.women || 0}</span></div>
+                    <div class="detail-row"><span class="label">🧒 Children</span><span class="value">${d.children || 0}</span></div>
+                    <div class="detail-total">👥 Total Attendance: ${total}</div>
+                    <div style="margin-top:16px;border-top:2px solid #eee;padding-top:16px;">
+                        <div class="currency-row"><span class="label">💵 USD</span><span class="value">$${(d.usd || 0).toFixed(2)}</span></div>
+                        <div class="currency-row"><span class="label">💰 ZiG</span><span class="value">${(d.zig || 0).toFixed(2)}</span></div>
+                        <div class="currency-row"><span class="label">🇿🇦 ZAR</span><span class="value">R${(d.zar || 0).toFixed(2)}</span></div>
+                    </div>
+                    ${d.notes ? `<div style="margin-top:16px;"><div class="detail-row"><span class="label">📝 Notes</span><span class="value" style="font-weight:normal;">${d.notes}</span></div></div>` : ''}
+                    <div style="margin-top:16px;border-top:2px solid #eee;padding-top:12px;font-size:12px;color:#999;">
+                        Submitted by: ${d.submittedBy || 'Unknown'}
+                        <br>${d.submittedAt ? 'Submitted: ' + new Date(d.submittedAt.toDate()).toLocaleString() : ''}
+                    </div>
+                `;
+                
+                var deleteBtn = document.getElementById('modalDeleteBtn');
+                if (deleteBtn) {
+                    deleteBtn.style.display = isAdmin ? 'block' : 'none';
+                }
+                
+                document.getElementById('reportModal').classList.add('show');
+            })
+            .catch(function(err) { 
+                alert('Error loading report: ' + err.message); 
+            });
+    }
+
+    function closeModal() {
+        document.getElementById('reportModal').classList.remove('show');
+        currentReportId = null;
+    }
+
+    document.getElementById('reportModal').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
+
+    // ============================================================
+    // 🗑️ CLEAR ALL DATA
+    // ============================================================
+    function clearAllData() {
+        if (!confirm('⚠️⚠️⚠️ WARNING: This will DELETE ALL REPORTS permanently! This cannot be undone!\n\nAre you sure you want to continue?')) return;
+        if (!confirm('⚠️ FINAL WARNING: All church report data will be lost forever! Click OK to confirm.')) return;
+        
+        db.collection('reports').get()
+            .then(function(snapshot) {
+                if (snapshot.empty) {
+                    alert('No reports to delete.');
+                    return;
+                }
+                var deleted = 0;
+                var batch = db.batch();
+                snapshot.forEach(function(doc) {
+                    batch.delete(doc.ref);
+                    deleted++;
+                });
+                batch.commit()
+                    .then(function() {
+                        alert('✅ All ' + deleted + ' reports have been deleted successfully!');
+                        loadDashboard();
+                    })
+                    .catch(function(err) {
+                        alert('❌ Error deleting reports: ' + err.message);
+                    });
+            })
+            .catch(function(err) {
+                alert('❌ Error: ' + err.message);
+            });
+    }
+
+    // ============================================================
+    // 🔄 SWITCH TABS
+    // ============================================================
+    function switchTab(tab) {
+        document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+        document.querySelectorAll('[id^="tab"]').forEach(function(t) { t.classList.add('hidden'); });
+        if (tab === 'dashboard') {
+            document.getElementById('tabDashboard').classList.remove('hidden');
+            document.querySelectorAll('.tab')[0].classList.add('active');
+            loadDashboard();
+        } else if (tab === 'submit') {
+            document.getElementById('tabSubmit').classList.remove('hidden');
+            document.querySelectorAll('.tab')[1].classList.add('active');
+        } else if (tab === 'history') {
+            document.getElementById('tabHistory').classList.remove('hidden');
+            document.querySelectorAll('.tab')[2].classList.add('active');
+            loadHistory();
+        }
+    }
+
+    // ============================================================
+    // 📄 DOWNLOAD PDF - WITH ASSEMBLY BY ASSEMBLY REPORTS
+    // ============================================================
+    function downloadPDF() {
+        var loadingEl = document.getElementById('pdfLoading');
+        if (loadingEl) {
+            loadingEl.classList.add('show');
+        }
+        
+        var assemblyTotals = window._assemblyTotals || {};
+        var totals = window._totals || {};
+        var assemblyDetails = window._assemblyDetails || {};
+        var reports = window._reports || [];
+        var date = new Date().toLocaleString();
+        
+        // Build assembly rows with detailed info
+        var assemblyRows = '';
+        var assemblyNames = Object.keys(assemblyDetails);
+        if (assemblyNames.length > 0) {
+            assemblyNames.sort(function(a, b) { return assemblyDetails[b].attendance - assemblyDetails[a].attendance; });
+            assemblyNames.forEach(function(name) {
+                var details = assemblyDetails[name];
+                assemblyRows += `
+                    <tr style="background:#f8f8f8;">
+                        <td colspan="4" style="padding:10px;border:1px solid #ddd;font-weight:bold;background:#1A1A2E;color:#FFBF00;">
+                            🏛️ ${name}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:8px;border:1px solid #ddd;padding-left:20px;">👥 Total Attendance</td>
+                        <td style="padding:8px;text-align:center;border:1px solid #ddd;" colspan="3">${details.attendance}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:8px;border:1px solid #ddd;padding-left:20px;">💵 USD</td>
+                        <td style="padding:8px;text-align:right;border:1px solid #ddd;">$${details.usd.toFixed(2)}</td>
+                        <td style="padding:8px;border:1px solid #ddd;padding-left:20px;">💰 ZiG</td>
+                        <td style="padding:8px;text-align:right;border:1px solid #ddd;">${details.zig.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:8px;border:1px solid #ddd;padding-left:20px;">🇿🇦 ZAR</td>
+                        <td style="padding:8px;text-align:right;border:1px solid #ddd;">R${details.zar.toFixed(2)}</td>
+                        <td style="padding:8px;border:1px solid #ddd;padding-left:20px;"></td>
+                        <td style="padding:8px;border:1px solid #ddd;"></td>
+                    </tr>
+                `;
+            });
+        } else {
+            assemblyRows = '<tr><td colspan="4" style="padding:10px;text-align:center;border:1px solid #ddd;color:#888;">No reports found</td></tr>';
+        }
+        
+        var content = `
+            <div style="font-family:Arial,sans-serif;padding:30px;max-width:800px;margin:0 auto;">
+                <div style="text-align:center;border-bottom:3px solid #1A1A2E;padding-bottom:20px;margin-bottom:25px;">
+                    <h1 style="color:#1A1A2E;font-size:28px;margin-bottom:4px;">🏛️ Shekinah Glory Kingdom</h1>
+                    <h2 style="color:#C9A84C;font-size:18px;font-weight:normal;">Church Report Summary</h2>
+                    <p style="color:#666;font-size:13px;margin-top:8px;">Generated: ${date}</p>
+                    <p style="color:#888;font-size:12px;margin-top:4px;">Total Reports: ${reports.length}</p>
+                </div>
+                
+                <div style="margin-bottom:25px;">
+                    <h3 style="color:#1A1A2E;border-bottom:2px solid #C9A84C;padding-bottom:8px;font-size:16px;">📊 Overall Attendance</h3>
+                    <table style="width:100%;border-collapse:collapse;margin-top:12px;">
+                        <tr><td style="padding:8px;background:#f8f8f8;border:1px solid #ddd;"><strong>Men</strong></td><td style="padding:8px;text-align:right;border:1px solid #ddd;">${totals.men || 0}</td></tr>
+                        <tr><td style="padding:8px;background:#f8f8f8;border:1px solid #ddd;"><strong>Women</strong></td><td style="padding:8px;text-align:right;border:1px solid #ddd;">${totals.women || 0}</td></tr>
+                        <tr><td style="padding:8px;background:#f8f8f8;border:1px solid #ddd;"><strong>Children</strong></td><td style="padding:8px;text-align:right;border:1px solid #ddd;">${totals.children || 0}</td></tr>
+                        <tr style="background:#1A1A2E;color:#FFBF00;"><td style="padding:10px;border:1px solid #1A1A2E;"><strong>TOTAL ATTENDANCE</strong></td><td style="padding:10px;text-align:right;border:1px solid #1A1A2E;font-size:18px;">${totals.attendance || 0}</td></tr>
+                    </table>
+                </div>
+                
+                <div style="margin-bottom:25px;">
+                    <h3 style="color:#1A1A2E;border-bottom:2px solid #C9A84C;padding-bottom:8px;font-size:16px;">💰 Offerings (By Currency)</h3>
+                    <table style="width:100%;border-collapse:collapse;margin-top:12px;">
+                        <tr><td style="padding:8px;background:#f8f8f8;border:1px solid #ddd;"><strong>💵 USD</strong></td><td style="padding:8px;text-align:right;border:1px solid #ddd;">$${(totals.usd || 0).toFixed(2)}</td></tr>
+                        <tr><td style="padding:8px;background:#f8f8f8;border:1px solid #ddd;"><strong>💰 ZiG</strong></td><td style="padding:8px;text-align:right;border:1px solid #ddd;">${(totals.zig || 0).toFixed(2)}</td></tr>
+                        <tr><td style="padding:8px;background:#f8f8f8;border:1px solid #ddd;"><strong>🇿🇦 ZAR</strong></td><td style="padding:8px;text-align:right;border:1px solid #ddd;">R${(totals.zar || 0).toFixed(2)}</td></tr>
+                    </table>
+                    <div style="margin-top:12px;padding:12px;background:#f8f8f8;border-radius:8px;text-align:center;font-size:14px;color:#666;">
+                        <strong>Note:</strong> Each currency is shown separately. USD, ZiG, and ZAR are different currencies and should not be combined.
+                    </div>
+                </div>
+                
+                <div style="margin-bottom:25px;">
+                    <h3 style="color:#1A1A2E;border-bottom:2px solid #C9A84C;padding-bottom:8px;font-size:16px;">🏛️ Assembly by Assembly Reports</h3>
+                    <table style="width:100%;border-collapse:collapse;margin-top:12px;">
+                        <thead>
+                            <tr style="background:#1A1A2E;color:#FFBF00;">
+                                <th style="padding:10px;text-align:left;border:1px solid #1A1A2E;">Assembly</th>
+                                <th style="padding:10px;text-align:center;border:1px solid #1A1A2E;">Attendance</th>
+                                <th style="padding:10px;text-align:center;border:1px solid #1A1A2E;">Currency</th>
+                                <th style="padding:10px;text-align:center;border:1px solid #1A1A2E;">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>${assemblyRows}</tbody>
+                    </table>
+                </div>
+                
+                <div style="text-align:center;margin-top:30px;padding-top:20px;border-top:2px solid #eee;color:#888;font-size:12px;">
+                    Shekinah Glory Kingdom Church Report
+                </div>
+            </div>
+        `;
+        
+        var element = document.createElement('div');
+        element.innerHTML = content;
+        document.body.appendChild(element);
+        
+        if (typeof html2pdf !== 'undefined') {
+            html2pdf()
+                .set({
+                    margin: 0,
+                    filename: 'Shekinah_Church_Report.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                })
+                .from(element)
+                .save()
+                .then(function() {
+                    document.body.removeChild(element);
+                    if (loadingEl) {
+                        loadingEl.classList.remove('show');
+                    }
+                })
+                .catch(function(err) {
+                    console.error('PDF Error:', err);
+                    document.body.removeChild(element);
+                    if (loadingEl) {
+                        loadingEl.classList.remove('show');
+                    }
+                    alert('Error generating PDF: ' + err.message);
+                });
+        } else {
+            var script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+            script.onload = function() {
+                document.body.removeChild(element);
+                if (loadingEl) {
+                    loadingEl.classList.remove('show');
+                }
+                downloadPDF();
+            };
+            script.onerror = function() {
+                document.body.removeChild(element);
+                if (loadingEl) {
+                    loadingEl.classList.remove('show');
+                }
+                alert('PDF library could not be loaded. Please check your internet connection and try again.');
+            };
+            document.head.appendChild(script);
+        }
+    }
+</script>
+
+</body>
+</html>
